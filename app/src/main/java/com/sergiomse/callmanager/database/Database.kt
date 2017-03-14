@@ -7,10 +7,10 @@ import android.util.Log
 
 
 /**
- * Created by sergiomse@gmail.com on 15/12/2017.
+ * Created by sergiomse@gmail.com.
  */
 
-class Database {
+class Database(private val context: Context) {
 
     private val DATABASE_NAME = "database.db"
     val DATABASE_TABLE = "phones"
@@ -44,12 +44,12 @@ class Database {
     private var helper: DBOpenHelper? = null
     private var db: SQLiteDatabase? = null
 
-    fun Database(context: Context) {
+    init {
         helper = DBOpenHelper(context)
         establishDb()
     }
 
-    fun establishDb() {
+    private fun establishDb() {
         if (db == null) {
             db = helper!!.writableDatabase
         }
@@ -62,4 +62,14 @@ class Database {
         }
     }
 
+    fun getAllNumbers(): Array<String> {
+        val numbers = mutableListOf<String>()
+        val c = db!!.query(DATABASE_TABLE, COLS, null, null, null, null, null)
+        if (c!!.moveToNext()) {
+            numbers.add(c.getString(1))
+        }
+        c.close()
+
+        return numbers.toTypedArray()
+    }
 }
