@@ -1,8 +1,10 @@
 package com.sergiomse.callmanager
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import com.sergiomse.callmanager.database.Database
@@ -10,6 +12,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
+
+    private val TAG = MainActivity::class.simpleName
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,7 +31,8 @@ class MainActivity : AppCompatActivity() {
         val db = Database(this)
         val numberList = db.getAllNumbers()
         val adapter = NumbersAdapter(this, numberList)
-        numberRV.setAdapter(adapter)
+        numberRV.adapter = adapter
+        db.cleanup()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -36,15 +41,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.action_add_number ->
-                //TODO Show activity for adding the number
-                return true
+        Log.d(TAG, "onOptionsItemSelected: " + item.itemId)
+        return when (item.itemId) {
+            R.id.action_add_number -> {
+                val intent = Intent(this, AddNumberActivity::class.java)
+                startActivity(intent)
+                true
+            }
 
             else ->
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
-                return super.onOptionsItemSelected(item)
+                super.onOptionsItemSelected(item)
         }
     }
 }

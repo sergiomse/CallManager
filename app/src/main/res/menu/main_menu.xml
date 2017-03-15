@@ -5,5 +5,5 @@
         android:id="@+id/action_add_number"
         android:icon="@android:drawable/ic_menu_add"
         android:title="New number"
-        app:showAsAction="always"/>
+        app:showAsAction="ifRoom"/>
 </menu>

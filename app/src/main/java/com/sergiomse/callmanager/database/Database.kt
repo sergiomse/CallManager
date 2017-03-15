@@ -1,5 +1,6 @@
 package com.sergiomse.callmanager.database
 
+import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -71,5 +72,11 @@ class Database(private val context: Context) {
         c.close()
 
         return numbers.toTypedArray()
+    }
+
+    fun insertNumber(number: String) {
+        val value = ContentValues()
+        value.put("number", number)
+        db!!.insert(DATABASE_TABLE, null, value)
     }
 }
