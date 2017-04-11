@@ -15,6 +15,11 @@ import android.Manifest.permission.WRITE_CALENDAR
 import android.content.pm.PackageManager
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.os.Build
+import android.content.Context.NOTIFICATION_SERVICE
+import android.app.NotificationManager
+
+
 
 
 
@@ -34,6 +39,13 @@ class MainActivity : AppCompatActivity() {
         numberRV.layoutManager = layoutManager
 
         requestPermissionReadPhoneState()
+
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !notificationManager.isNotificationPolicyAccessGranted) {
+            val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            startActivity(intent)
+        }
     }
 
     private fun requestPermissionReadPhoneState() {

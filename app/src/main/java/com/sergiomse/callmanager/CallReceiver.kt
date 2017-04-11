@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
 import android.util.Log
+import com.sergiomse.callmanager.database.Database
 
 class CallReceiver : BroadcastReceiver() {
 
@@ -17,7 +18,23 @@ class CallReceiver : BroadcastReceiver() {
             val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
             Log.d(TAG, "state: $state, number: $number")
 
-//            if (state == TelephonyManager.EXTRA_STATE_RINGING)
+            if (state == TelephonyManager.EXTRA_STATE_RINGING) {
+                val db = Database(context)
+                val numbers = db.getAllNumbers()
+                db.cleanup()
+                for(n in numbers) {
+                    if (n == number) {
+                        val serviceIntent = Intent(context, RingService::class.java)
+                        context.startService(serviceIntent)
+                        break
+                    }
+                }
+
+            } else if (state == TelephonyManager.EXTRA_STATE_IDLE) {
+                val serviceIntent = Intent(context, RingService::class.java)
+                context.stopService(serviceIntent)
+            }
+
         }
     }
 }

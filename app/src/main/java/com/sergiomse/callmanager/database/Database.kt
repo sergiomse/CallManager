@@ -66,7 +66,7 @@ class Database(private val context: Context) {
     fun getAllNumbers(): Array<String> {
         val numbers = mutableListOf<String>()
         val c = db!!.query(DATABASE_TABLE, COLS, null, null, null, null, null)
-        if (c!!.moveToNext()) {
+        while (c!!.moveToNext()) {
             numbers.add(c.getString(1))
         }
         c.close()
