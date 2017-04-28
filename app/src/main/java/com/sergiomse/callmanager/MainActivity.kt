@@ -1,28 +1,19 @@
 package com.sergiomse.callmanager
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.Intent
-import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
-import com.sergiomse.callmanager.database.Database
-import kotlinx.android.synthetic.main.activity_main.*
-import android.Manifest.permission
-import android.Manifest.permission.WRITE_CALENDAR
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.os.Build
-import android.content.Context.NOTIFICATION_SERVICE
-import android.app.NotificationManager
-
-
-
-
-
+import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.LinearLayoutManager
+import com.sergiomse.callmanager.database.Database
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.content_main.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,8 +23,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(mainToolbar)
-        mainToolbar.title = "Call Manager"
+        setSupportActionBar(toolbar)
 
         val layoutManager = LinearLayoutManager(this)
         numberRV.layoutManager = layoutManager
@@ -43,7 +33,12 @@ class MainActivity : AppCompatActivity() {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !notificationManager.isNotificationPolicyAccessGranted) {
-            val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            startActivity(intent)
+        }
+
+        fab.setOnClickListener { _ ->
+            val intent = Intent(this, AddNumberActivity::class.java)
             startActivity(intent)
         }
     }
@@ -104,26 +99,5 @@ class MainActivity : AppCompatActivity() {
         val adapter = NumbersAdapter(this, numberList)
         numberRV.adapter = adapter
         db.cleanup()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        Log.d(TAG, "onOptionsItemSelected: " + item.itemId)
-        return when (item.itemId) {
-            R.id.action_add_number -> {
-                val intent = Intent(this, AddNumberActivity::class.java)
-                startActivity(intent)
-                true
-            }
-
-            else ->
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
-                super.onOptionsItemSelected(item)
-        }
     }
 }
