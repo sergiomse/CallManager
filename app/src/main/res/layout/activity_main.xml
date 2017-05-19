@@ -25,12 +25,43 @@
         android:id="@+id/mainLayout"
         layout="@layout/content_main" />
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        app:srcCompat="@drawable/ic_add" />
+        android:gravity="center_horizontal">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/addNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_add_number"
+            app:backgroundTint="@color/colorSecondaryFab"
+            android:tint="@color/colorSecondaryFabTint"
+            android:layout_margin="@dimen/fab_internal_margin"/>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/addContact"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_add_contacts"
+            app:backgroundTint="@color/colorSecondaryFab"
+            android:tint="@color/colorSecondaryFabTint"
+            android:layout_margin="@dimen/fab_internal_margin"
+            />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fabSize="normal"
+            app:srcCompat="@drawable/ic_add"
+            android:layout_margin="@dimen/fab_internal_margin"/>
+
+    </LinearLayout>
 
 </android.support.design.widget.CoordinatorLayout>

@@ -1,6 +1,8 @@
 package com.sergiomse.callmanager
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,14 +18,17 @@ import android.support.v7.widget.LinearLayoutManager
 import com.sergiomse.callmanager.database.Database
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-import android.net.Uri.fromParts
-import android.util.Log
+import android.view.View
+import android.view.animation.Animation
+import android.view.animation.RotateAnimation
 
 
 class MainActivity : AppCompatActivity() {
 
     private val TAG = MainActivity::class.simpleName
     private val PERMISSION_REQUEST_READ_PHONE_STATE = 100
+
+    private var fabSelected = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +49,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         fab.setOnClickListener { _ ->
+            if (!fabSelected) {
+                startFabForwardAnimation()
+            } else {
+                startFabReverseAnimation()
+            }
+            fabSelected = !fabSelected
+
+        }
+
+        addNumber.setOnClickListener { _ ->
             val intent = Intent(this, AddNumberActivity::class.java)
             startActivity(intent)
         }
@@ -51,6 +66,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        initFabAnimations()
 
         val db = Database(this)
         val numberList = db.getAllNumbers()
@@ -88,11 +105,63 @@ class MainActivity : AppCompatActivity() {
                                 startActivity(intent)
                             })
                             .show()
-
                 }
                 return
             }
         }
     }
 
+    private fun initFabAnimations() {
+        fabSelected = false
+        fab.animation = null
+        fab.rotation = 0f
+        addNumber.visibility = View.GONE
+        addContact.visibility = View.GONE
+    }
+
+    private fun startFabForwardAnimation() {
+        var animation = RotateAnimation(0f, 45f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
+        animation.duration = 200
+        animation.fillAfter = true
+        fab.startAnimation(animation)
+
+        addNumber.alpha = 0f
+        addNumber.visibility = View.VISIBLE
+        addNumber.animate()
+                .alpha(1f)
+                .setDuration(200)
+                .setListener(null)
+
+        addContact.alpha = 0f
+        addContact.visibility = View.VISIBLE
+        addContact.animate()
+                .alpha(1f)
+                .setDuration(200)
+                .setListener(null)
+    }
+
+    private fun startFabReverseAnimation() {
+        var animation = RotateAnimation(45f, 0f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
+        animation.duration = 200
+        animation.fillAfter = true
+        fab.startAnimation(animation)
+
+        addNumber.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .setListener(object: AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator?) {
+                        addNumber.visibility = View.GONE
+                    }
+                })
+
+        addContact.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .setListener(object: AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator?) {
+                        addContact.visibility = View.GONE
+                    }
+                })
+    }
 }
