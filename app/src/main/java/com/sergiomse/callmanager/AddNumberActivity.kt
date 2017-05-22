@@ -3,7 +3,10 @@ package com.sergiomse.callmanager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import com.sergiomse.callmanager.database.Database
+import com.sergiomse.callmanager.database.AppDatabase
+import com.sergiomse.callmanager.database.NumbersDB
+import com.sergiomse.callmanager.model.NumberEntry
+import com.sergiomse.callmanager.model.NumberType
 import kotlinx.android.synthetic.main.activity_add_number.*
 
 class AddNumberActivity : AppCompatActivity() {
@@ -14,9 +17,8 @@ class AddNumberActivity : AppCompatActivity() {
     }
 
     fun onSave(view: View) {
-        val db = Database(this)
-        db.insertNumber(numberInput.text.toString())
-        db.cleanup()
+        val numberEntry = NumberEntry(type = NumberType.NUMBER, number = numberInput.text.toString())
+        AppDatabase.getInstance(this).numberDao().insert(numberEntry)
         finish()
     }
 }

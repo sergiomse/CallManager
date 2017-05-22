@@ -5,19 +5,21 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
+import com.sergiomse.callmanager.model.NumberEntry
+import com.sergiomse.callmanager.model.NumberType
 
 
 /**
  * Created by sergiomse@gmail.com.
  */
 
-class Database(private val context: Context) {
+class NumbersDB(private val context: Context) {
 
     private val DATABASE_NAME = "database.db"
     val DATABASE_TABLE = "phones"
     val DATABASE_VERSION = 1
 
-    val COLS = arrayOf("_id", "number")
+    val COLS = arrayOf("_id", "name", "number")
 
 
     /**
@@ -30,6 +32,7 @@ class Database(private val context: Context) {
         private val CREATE_TABLE = "create table " +
                 DATABASE_TABLE + " (" +
                 "_id integer primary key autoincrement, " +
+                "name text, " +
                 "number text);"
 
         override fun onCreate(db: SQLiteDatabase) {
@@ -37,7 +40,7 @@ class Database(private val context: Context) {
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-            Log.d(TAG, "Database upgrade")
+            Log.d(TAG, "NumbersDB upgrade")
         }
     }
 
@@ -63,20 +66,27 @@ class Database(private val context: Context) {
         }
     }
 
-    fun getAllNumbers(): Array<String> {
-        val numbers = mutableListOf<String>()
+    fun getAllNumbers(): MutableList<NumberEntry> {
+        val numbers = mutableListOf<NumberEntry>()
         val c = db!!.query(DATABASE_TABLE, COLS, null, null, null, null, null)
         while (c!!.moveToNext()) {
-            numbers.add(c.getString(1))
+            val id = c.getLong(0)
+
+            val name = c.getString(1)
+            val numberStr = c.getString(2)
+            numbers.add (NumberEntry(id, NumberType.NUMBER, name, numberStr))
         }
         c.close()
 
-        return numbers.toTypedArray()
+        return numbers
     }
 
-    fun insertNumber(number: String) {
+    fun insertNumber(numberEntry: NumberEntry) {
+        if (numberEntry.type != NumberType.NUMBER) return
+
         val value = ContentValues()
-        value.put("number", number)
+        value.put(COLS[1], numberEntry.name)
+        value.put(COLS[2], numberEntry.number)
         db!!.insert(DATABASE_TABLE, null, value)
     }
 }

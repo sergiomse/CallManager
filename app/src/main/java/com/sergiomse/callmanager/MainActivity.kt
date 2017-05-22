@@ -9,24 +9,27 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.ContactsContract
 import android.provider.Settings
 import android.support.design.widget.Snackbar
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
-import com.sergiomse.callmanager.database.Database
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.content_main.*
 import android.view.View
 import android.view.animation.Animation
 import android.view.animation.RotateAnimation
+import com.sergiomse.callmanager.database.AppDatabase
+import com.sergiomse.callmanager.database.NumbersDB
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.content_main.*
 
 
 class MainActivity : AppCompatActivity() {
 
     private val TAG = MainActivity::class.simpleName
     private val PERMISSION_REQUEST_READ_PHONE_STATE = 100
+    private val PICK_CONTACT_REQUEST_CODE = 1000
 
     private var fabSelected = false
 
@@ -62,6 +65,11 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, AddNumberActivity::class.java)
             startActivity(intent)
         }
+
+        addContact.setOnClickListener {_ ->
+            val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+            startActivityForResult(intent, PICK_CONTACT_REQUEST_CODE)
+        }
     }
 
     override fun onResume() {
@@ -69,11 +77,14 @@ class MainActivity : AppCompatActivity() {
 
         initFabAnimations()
 
-        val db = Database(this)
-        val numberList = db.getAllNumbers()
-        val adapter = NumbersAdapter(this, numberList)
+        val numbers = AppDatabase.getInstance(this).numberDao().getAll()
+
+//        val numbersDB = NumbersDB(this)
+//        val list = numbersDB.getAllNumbers()
+//        numbersDB.cleanup()
+
+        val adapter = NumbersAdapter(this, numbers)
         numberRV.adapter = adapter
-        db.cleanup()
 
     }
 
@@ -106,7 +117,25 @@ class MainActivity : AppCompatActivity() {
                             })
                             .show()
                 }
-                return
+
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+        super.onActivityResult(requestCode, resultCode, intent)
+
+        when (requestCode) {
+            PICK_CONTACT_REQUEST_CODE -> {
+                if (resultCode == RESULT_OK && intent != null) {
+                    val contactData = intent.data
+                    val c = contentResolver.query(contactData, null, null, null, null);
+                    if (c.moveToFirst()) {
+                        val id = c.getString(c.getColumnIndex(ContactsContract.Contacts._ID))
+                        val name = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
+
+                    }
+                }
             }
         }
     }
