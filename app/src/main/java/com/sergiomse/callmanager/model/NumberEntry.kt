@@ -8,8 +8,8 @@ import android.arch.persistence.room.PrimaryKey
  * Created by sergiomse@gmail.com.
  */
 @Entity
-data class NumberEntry(@PrimaryKey val id: Long = 0,
-                       @ColumnInfo val type: NumberType,
-                       @ColumnInfo val name: String = "",
-                       @ColumnInfo val number: String = "",
-                       @ColumnInfo val contactId: Long = 0)
+data class NumberEntry(@PrimaryKey(autoGenerate = true) var id: Long = 0,
+                       @ColumnInfo var type: NumberType,
+                       @ColumnInfo var name: String = "",
+                       @ColumnInfo var number: String = "",
+                       @ColumnInfo var contactId: Long = 0)

@@ -20,7 +20,8 @@ import android.view.View
 import android.view.animation.Animation
 import android.view.animation.RotateAnimation
 import com.sergiomse.callmanager.database.AppDatabase
-import com.sergiomse.callmanager.database.NumbersDB
+import com.sergiomse.callmanager.model.NumberEntry
+import com.sergiomse.callmanager.model.NumberType
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 
@@ -28,10 +29,13 @@ import kotlinx.android.synthetic.main.content_main.*
 class MainActivity : AppCompatActivity() {
 
     private val TAG = MainActivity::class.simpleName
-    private val PERMISSION_REQUEST_READ_PHONE_STATE = 100
+    private val REQUEST_STANDARD_PERMISSIONS = 100
     private val PICK_CONTACT_REQUEST_CODE = 1000
 
     private var fabSelected = false
+
+    private var snackbar1: Snackbar? = null
+    private var snackbar2: Snackbar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,15 +45,9 @@ class MainActivity : AppCompatActivity() {
         val layoutManager = LinearLayoutManager(this)
         numberRV.layoutManager = layoutManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissionReadPhoneState()
-        }
+        createSnackbars()
 
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !notificationManager.isNotificationPolicyAccessGranted) {
-            val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
-            startActivity(intent)
-        }
+        startPermissionsRequest()
 
         fab.setOnClickListener { _ ->
             if (!fabSelected) {
@@ -77,49 +75,77 @@ class MainActivity : AppCompatActivity() {
 
         initFabAnimations()
 
-        val numbers = AppDatabase.getInstance(this).numberDao().getAll()
-
-//        val numbersDB = NumbersDB(this)
-//        val list = numbersDB.getAllNumbers()
-//        numbersDB.cleanup()
-
-        val adapter = NumbersAdapter(this, numbers)
-        numberRV.adapter = adapter
-
+        updateRecycler()
     }
 
-    private fun requestPermissionReadPhoneState() {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+    private fun startPermissionsRequest() {
 
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.READ_PHONE_STATE),
-                    PERMISSION_REQUEST_READ_PHONE_STATE);
+        val permissions = mutableListOf<String>()
+        if ( !isPermissionGranted(Manifest.permission.READ_PHONE_STATE) ) {
+            permissions.add(Manifest.permission.READ_PHONE_STATE)
+        }
+        if ( !isPermissionGranted(Manifest.permission.READ_CONTACTS) ) {
+            permissions.add(Manifest.permission.READ_CONTACTS)
+        }
 
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissions.toTypedArray(),
+                    REQUEST_STANDARD_PERMISSIONS)
+
+        } else {
+            requestNotificationManagerPermission()
         }
     }
 
-    //TODO show alert when the permission is not granted
+    /**
+     * @return True if the permission is granted, false if not
+     */
+    private fun isPermissionGranted(permission: String): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true
+        }
+        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+
+    private fun isNotificationManagerPermissionGranted(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true
+        }
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        return notificationManager.isNotificationPolicyAccessGranted
+    }
+
+    /**
+     * Request for Notification Policy (for volume muting) permission
+     */
+    private fun requestNotificationManagerPermission() {
+        if ( !isNotificationManagerPermissionGranted() ) {
+            val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            startActivity(intent)
+        }
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
-            PERMISSION_REQUEST_READ_PHONE_STATE -> {
+            REQUEST_STANDARD_PERMISSIONS -> {
+                if (permissions.isNotEmpty()) {
+                    for (i in permissions.indices) {
+                        when (permissions[i]) {
+                            Manifest.permission.READ_PHONE_STATE -> {
+                                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) snackbar1?.show()
+                            }
 
-                if (!grantResults.isNotEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    Snackbar.make(mainLayout,
-                            "Call Manager needs access to the phone state permission in order to detect incoming calls.",
-                            Snackbar.LENGTH_INDEFINITE)
-                            .setAction("Configure", {v ->
-                                val intent = Intent()
-                                intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                                val uri = Uri.fromParts("package", packageName, null)
-                                intent.data = uri
-                                startActivity(intent)
-                            })
-                            .show()
+                            Manifest.permission.READ_CONTACTS -> {
+                                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) snackbar2?.show()
+                            }
+                        }
+                    }
                 }
-
             }
         }
+
+        requestNotificationManagerPermission()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
@@ -132,12 +158,75 @@ class MainActivity : AppCompatActivity() {
                     val c = contentResolver.query(contactData, null, null, null, null);
                     if (c.moveToFirst()) {
                         val id = c.getString(c.getColumnIndex(ContactsContract.Contacts._ID))
-                        val name = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
 
+                        //TODO check if the contact already exists
+                        val contact = NumberEntry(type = NumberType.CONTACT, contactId = id.toLong())
+                        AppDatabase.getInstance(this).numberDao().insert(contact)
                     }
                 }
             }
         }
+    }
+
+    private fun createSnackbars() {
+        snackbar1 = Snackbar.make(mainLayout,
+                "Call Manager needs access to the phone state permission in order to detect incoming calls.",
+                Snackbar.LENGTH_INDEFINITE)
+                .setAction("Configure", {v ->
+                    val intent = Intent()
+                    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    val uri = Uri.fromParts("package", packageName, null)
+                    intent.data = uri
+                    startActivity(intent)
+                })
+
+        snackbar2 = Snackbar.make(mainLayout,
+                "Call Manager needs access to the contacts to work properly.",
+                Snackbar.LENGTH_INDEFINITE)
+                .setAction("Configure", {v ->
+                    val intent = Intent()
+                    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    val uri = Uri.fromParts("package", packageName, null)
+                    intent.data = uri
+                    startActivity(intent)
+                })
+    }
+
+    private fun updateRecycler() {
+
+        val list = AppDatabase.getInstance(this).numberDao().getAllNumbers()
+        val contactList = AppDatabase.getInstance(this).numberDao().getAllContacts()
+
+        if ( isPermissionGranted(Manifest.permission.READ_CONTACTS)) {
+            val contactIds = contactList.map { e -> e.contactId.toString() }
+
+            val cursor = contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    arrayOf(ContactsContract.CommonDataKinds.Phone._ID,
+                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                            ContactsContract.CommonDataKinds.Phone.NUMBER),
+                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                    contactIds.toTypedArray(),
+                    null)
+
+            val contacts = mutableListOf<NumberEntry>()
+            if (cursor!!.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone._ID))
+                val name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+                val number = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+
+                val contact = contactList.filter { e -> e.contactId == id }[0]
+                contact.name = name
+                contact.number = number
+            }
+            cursor.close()
+
+        } else {
+            snackbar2?.show()
+        }
+
+        list.addAll(contactList)
+        val adapter = NumbersAdapter(this, list)
+        numberRV.adapter = adapter
     }
 
     private fun initFabAnimations() {

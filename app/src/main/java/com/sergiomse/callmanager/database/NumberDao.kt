@@ -13,6 +13,12 @@ interface NumberDao {
     @Query("SELECT * FROM NumberEntry")
     fun getAll(): List<NumberEntry>
 
+    @Query("SELECT * FROM NumberEntry WHERE type = 'NUMBER'")
+    fun getAllNumbers(): MutableList<NumberEntry>
+
+    @Query("SELECT * FROM NumberEntry WHERE type = 'CONTACT'")
+    fun getAllContacts(): List<NumberEntry>
+
     @Insert
     fun insert(numberEntry: NumberEntry)
 }
