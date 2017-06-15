@@ -22,6 +22,8 @@ import android.view.animation.RotateAnimation
 import com.sergiomse.callmanager.database.AppDatabase
 import com.sergiomse.callmanager.model.NumberEntry
 import com.sergiomse.callmanager.model.NumberType
+import com.sergiomse.callmanager.utils.isNotificationManagerPermissionGranted
+import com.sergiomse.callmanager.utils.isPermissionGranted
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 
@@ -81,10 +83,10 @@ class MainActivity : AppCompatActivity() {
     private fun startPermissionsRequest() {
 
         val permissions = mutableListOf<String>()
-        if ( !isPermissionGranted(Manifest.permission.READ_PHONE_STATE) ) {
+        if ( !isPermissionGranted(this, Manifest.permission.READ_PHONE_STATE) ) {
             permissions.add(Manifest.permission.READ_PHONE_STATE)
         }
-        if ( !isPermissionGranted(Manifest.permission.READ_CONTACTS) ) {
+        if ( !isPermissionGranted(this, Manifest.permission.READ_CONTACTS) ) {
             permissions.add(Manifest.permission.READ_CONTACTS)
         }
 
@@ -98,29 +100,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * @return True if the permission is granted, false if not
-     */
-    private fun isPermissionGranted(permission: String): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return true
-        }
-        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-    }
-
-
-    private fun isNotificationManagerPermissionGranted(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return true
-        }
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        return notificationManager.isNotificationPolicyAccessGranted
-    }
-
-    /**
      * Request for Notification Policy (for volume muting) permission
      */
     private fun requestNotificationManagerPermission() {
-        if ( !isNotificationManagerPermissionGranted() ) {
+        if ( !isNotificationManagerPermissionGranted(this) ) {
             val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
             startActivity(intent)
         }
@@ -197,7 +180,7 @@ class MainActivity : AppCompatActivity() {
         val listOfNumbers = AppDatabase.getInstance(this).numberDao().getAllNumbers()
         val listOfContacts = AppDatabase.getInstance(this).numberDao().getAllContacts()
 
-        if ( isPermissionGranted(Manifest.permission.READ_CONTACTS)) {
+        if ( isPermissionGranted(this, Manifest.permission.READ_CONTACTS)) {
             val contactIds = listOfContacts.map { e -> e.contactId.toString() }
 
             val selection = MutableList(contactIds.size) { _ -> ContactsContract.Contacts._ID + " = ?"}
@@ -210,8 +193,8 @@ class MainActivity : AppCompatActivity() {
                     null)
 
             while (cursor!!.moveToNext()) {
-                val id = cursor.getLong(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone._ID))
-                val name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+                val id = cursor.getLong(cursor.getColumnIndex(ContactsContract.Contacts._ID))
+                val name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
 
                 val contacts = listOfContacts.filter { e -> e.contactId == id }
                 if (contacts.isNotEmpty()) {
