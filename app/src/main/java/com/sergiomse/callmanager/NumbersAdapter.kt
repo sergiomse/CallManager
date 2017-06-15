@@ -6,7 +6,9 @@ import android.view.View
 import android.widget.TextView
 import android.view.ViewGroup
 import android.view.LayoutInflater
+import android.widget.ImageView
 import com.sergiomse.callmanager.model.NumberEntry
+import com.sergiomse.callmanager.model.NumberType
 
 
 /**
@@ -19,6 +21,8 @@ class NumbersAdapter(var context: Context, var numbers: List<NumberEntry>) : Rec
 
         private val TAG = ViewHolder::class.java.simpleName
 
+        var numberIcon: ImageView = itemView.findViewById(R.id.iconNumber)
+        var contactIcon: ImageView = itemView.findViewById(R.id.iconContact)
         var numberView: TextView = itemView.findViewById(R.id.number)
     }
 
@@ -28,7 +32,20 @@ class NumbersAdapter(var context: Context, var numbers: List<NumberEntry>) : Rec
     }
 
     override fun onBindViewHolder(holder: ViewHolder?, position: Int) {
-        holder!!.numberView.text = numbers[position].number
+        when(numbers[position].type) {
+            NumberType.NUMBER -> {
+                holder!!.contactIcon.visibility = View.GONE
+                holder.numberView.text = numbers[position].number
+            }
+
+            NumberType.CONTACT -> {
+                holder!!.numberIcon.visibility = View.GONE
+                holder.numberView.text = numbers[position].name
+            }
+            else -> {
+            }
+        }
+
     }
 
     override fun getItemCount(): Int {

@@ -194,29 +194,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateRecycler() {
 
-        val list = AppDatabase.getInstance(this).numberDao().getAllNumbers()
-        val contactList = AppDatabase.getInstance(this).numberDao().getAllContacts()
+        val listOfNumbers = AppDatabase.getInstance(this).numberDao().getAllNumbers()
+        val listOfContacts = AppDatabase.getInstance(this).numberDao().getAllContacts()
 
         if ( isPermissionGranted(Manifest.permission.READ_CONTACTS)) {
-            val contactIds = contactList.map { e -> e.contactId.toString() }
+            val contactIds = listOfContacts.map { e -> e.contactId.toString() }
 
-            val cursor = contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                    arrayOf(ContactsContract.CommonDataKinds.Phone._ID,
-                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                            ContactsContract.CommonDataKinds.Phone.NUMBER),
-                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+            val selection = MutableList(contactIds.size) { _ -> ContactsContract.Contacts._ID + " = ?"}
+                    .joinToString(separator = " OR ")
+            val cursor = contentResolver.query(ContactsContract.Contacts.CONTENT_URI,
+                    arrayOf(ContactsContract.Contacts._ID,
+                            ContactsContract.Contacts.DISPLAY_NAME),
+                    selection,
                     contactIds.toTypedArray(),
                     null)
 
-            val contacts = mutableListOf<NumberEntry>()
-            if (cursor!!.moveToFirst()) {
+            while (cursor!!.moveToNext()) {
                 val id = cursor.getLong(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone._ID))
                 val name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
-                val number = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
 
-                val contact = contactList.filter { e -> e.contactId == id }[0]
-                contact.name = name
-                contact.number = number
+                val contacts = listOfContacts.filter { e -> e.contactId == id }
+                if (contacts.isNotEmpty()) {
+                    contacts[0].name = name
+                }
             }
             cursor.close()
 
@@ -224,8 +224,8 @@ class MainActivity : AppCompatActivity() {
             snackbar2?.show()
         }
 
-        list.addAll(contactList)
-        val adapter = NumbersAdapter(this, list)
+        listOfNumbers.addAll(listOfContacts)
+        val adapter = NumbersAdapter(this, listOfNumbers)
         numberRV.adapter = adapter
     }
 
