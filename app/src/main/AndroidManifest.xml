@@ -25,11 +25,6 @@
 
         <activity android:name=".AddNumberActivity" />
 
-        <service
-            android:name=".RingService"
-            android:enabled="true"
-            android:exported="false" />
-
         <receiver android:name=".CallReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />

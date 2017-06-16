@@ -1,6 +1,7 @@
 package com.sergiomse.callmanager
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,17 +14,17 @@ import com.sergiomse.callmanager.database.AppDatabase
 import com.sergiomse.callmanager.utils.isNotificationManagerPermissionGranted
 import com.sergiomse.callmanager.utils.isPermissionGranted
 
+
 class CallReceiver : BroadcastReceiver() {
 
     private val TAG = CallReceiver::class.simpleName
 
+    @SuppressLint("ApplySharedPref")
     override fun onReceive(context: Context, intent: Intent) {
         // If we don't have "don't disturbe" permission granted we don't continue
         if (!isNotificationManagerPermissionGranted(context)) return
 
-        // Always mute for a quick response when a call is received. Later we'll proceed to check if should unmute
-        val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audio.ringerMode = AudioManager.RINGER_MODE_SILENT
+        val pref = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
 
         Log.d(TAG, "incoming call: " + intent.action)
         if (intent.action == TelephonyManager.ACTION_PHONE_STATE_CHANGED) {
@@ -32,20 +33,28 @@ class CallReceiver : BroadcastReceiver() {
             Log.d(TAG, "state: $state, number: $number")
 
             if (state == TelephonyManager.EXTRA_STATE_RINGING) {
+                // Always mute for a quick response when a call is received. Later we'll proceed to check if should unmute
                 val bannedNumbers = getAllBannedPhoneNumbers(context)
                 val isBanned = bannedNumbers.any { PhoneNumberUtils.compare(number, it) }
                 Log.d(TAG, "Is banned: $isBanned")
-                if (!isBanned) {
-                    // The phone number isn't in the black list, so unmute it
-                    Log.d(TAG, "Restoring ringer mode normal")
+                if (isBanned) {
+                    // The phone number is in the black list, so mute it
                     val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                    audio.ringerMode = AudioManager.RINGER_MODE_NORMAL
-//                    val ringerModeTask = RingerModeTask()
-//                    ringerModeTask.execute(Pair(context, true))
+                    val volume = audio.getStreamVolume(AudioManager.STREAM_RING)
+                    val editor = pref.edit()
+                    with(editor) {
+                        putInt("volume", volume)
+                        commit()
+                        Log.d(TAG, "Volume saved")
+                    }
+                    audio.setStreamVolume(AudioManager.STREAM_RING, 0, 0)
+                    Log.d(TAG, "Volume = " + volume)
                 }
 
             } else if (state == TelephonyManager.EXTRA_STATE_IDLE) {
-                audio.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                val volume = pref.getInt("volume", audio.getStreamMaxVolume(AudioManager.STREAM_RING) / 2)
+                audio.setStreamVolume(AudioManager.STREAM_RING, volume, 0)
             }
 
         }
